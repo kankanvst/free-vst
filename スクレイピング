@@ -1,0 +1,40 @@
+import requests
+from bs4 import BeautifulSoup
+
+# スクレイピング対象のURL
+urls = [
+    "https://azu-soundworks.net/?cat=126",
+    "https://www.freekontaktina.com/search/label/期間限定無償配布"
+]
+
+# 除外キーワード
+exclude_keywords = ["セール", "off", "OFF", "過去最安値"]
+
+# LINE Notifyのトークン
+token = "dUewVtnzHN4dtam9BlJdgfxfa17p0jVGpt86ciWMv26"
+
+# スクレイピング
+for url in urls:
+    res = requests.get(url)
+    soup = BeautifulSoup(res.content, "html.parser")
+
+    # 記事のタイトルとURLを取得
+    articles = soup.select(".entry-title a")
+
+    # LINE Notifyに送信するメッセージを作成
+    message = ""
+    for article in articles:
+        title = article.text
+        link = article.get("href")
+
+        # 除外キーワードを含む記事はスキップ
+        if any(keyword in title for keyword in exclude_keywords):
+            continue
+
+        message += f"{title}\n{link}\n\n"
+
+    # LINE Notifyに送信
+    if message:
+        headers = {"Authorization": f"Bearer {token}"}
+        params = {"message": message}
+        requests.post("https://notify-api.line.me/api/notify", headers=headers, params=params)
